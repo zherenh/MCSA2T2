@@ -1,0 +1,12 @@
+material {
+    name : "White Material",
+    requires : [ position, uv0 ],
+    shadingModel : unlit
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor.rgb = vec3(1.0);
+    }
+}
