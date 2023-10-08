@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
+import android.webkit.WebView
 import android.widget.Toast
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -31,7 +31,6 @@ import io.github.sceneview.math.toFloat3
 import io.github.sceneview.model.GLBLoader
 import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.utils.Color
-import io.github.sceneview.utils.doOnApplyWindowInsets
 import kotlinx.coroutines.delay
 import java.io.IOException
 import io.github.sceneview.sample.arcursorplacement.ModelsAdapter as ModelsAdapter
@@ -68,12 +67,14 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
     var modelPlaceList = mutableListOf<PlacedModel>()
     var recordCount: Int = 0
     var lastAnchor: Anchor? = null
+
     lateinit var sceneView: ArSceneView
     lateinit var loadingView: View
+    lateinit var modelsView: RecyclerView
+    lateinit var webView:WebView
     lateinit var anchorButton: ExtendedFloatingActionButton
     lateinit var placeBtn: ExtendedFloatingActionButton
     lateinit var addNodeBtn: ExtendedFloatingActionButton
-    lateinit var modelsView: RecyclerView
     var sphereModelInstance: ModelInstance? = null
     lateinit var cursorNode: CursorNode
     var modelNode: ArModelNode? = null
@@ -101,7 +102,6 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         modelsView=view.findViewById(R.id.modelsRV)
 
 
-
 //        anchorButton = view.findViewById<ExtendedFloatingActionButton>(R.id.anchorButton).apply {
 //            val bottomMargin = (layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
 //            doOnApplyWindowInsets { systemBarsInsets ->
@@ -110,7 +110,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
 //            }
 //            setOnClickListener { cursorNode.createAnchor()?.let { anchorOrMove(it) } }
 //        }
-        addNodeBtn = view.findViewById<ExtendedFloatingActionButton>(R.id.placeButton).apply {
+        addNodeBtn = view.findViewById<ExtendedFloatingActionButton>(R.id.addNodeButton).apply {
             setOnClickListener {
                 // Record current cursor position
                 cursorNode.createAnchor()?.let { newAnchor ->
@@ -508,6 +508,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
                 }
             }
     }
+
 
 }
 
