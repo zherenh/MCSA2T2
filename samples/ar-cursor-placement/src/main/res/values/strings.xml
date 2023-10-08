@@ -1,7 +1,8 @@
 <resources>
     <string name="app_name">AR Cursor Placement</string>
     <string name="place_object">Place at target</string>
-    <string name="move_object">Move to target</string>
-    <string name="record">Record</string>
+    <string name="move_object">Done</string>
+    <string name="place_obj">place</string>
+    <string name="addNode">Add Node</string>
     <string name="stop">Stop</string>
 </resources>

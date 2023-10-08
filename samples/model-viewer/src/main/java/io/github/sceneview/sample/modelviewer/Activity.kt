@@ -1,6 +1,7 @@
 package io.github.sceneview.sample.modelviewer
 
 import android.os.Bundle
+import android.util.Log
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -20,13 +21,13 @@ class Activity : AppCompatActivity(R.layout.activity) {
             fitsSystemWindows = false
         )
 
-        setSupportActionBar(findViewById<Toolbar>(R.id.toolbar)?.apply {
-            doOnApplyWindowInsets { systemBarsInsets ->
-                (layoutParams as ViewGroup.MarginLayoutParams).topMargin = systemBarsInsets.top
-            }
-            title = ""
-        })
-
+//        setSupportActionBar(findViewById<Toolbar>(R.id.toolbar)?.apply {
+//            doOnApplyWindowInsets { systemBarsInsets ->
+//                (layoutParams as ViewGroup.MarginLayoutParams).topMargin = systemBarsInsets.top
+//            }
+//            title = ""
+//        })
+        Log.e("Activity", "onCreate")
         supportFragmentManager.commit {
             add(R.id.containerFragment, MainFragment::class.java, Bundle())
         }

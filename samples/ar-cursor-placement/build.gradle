@@ -33,6 +33,7 @@ android {
 
 dependencies {
     implementation project(":samples:common")
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4" // use the latest version
 
     // ArSceneView
     releaseImplementation "io.github.sceneview:arsceneview:0.10.2"
