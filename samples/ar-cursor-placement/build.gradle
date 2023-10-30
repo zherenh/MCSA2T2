@@ -29,13 +29,49 @@ android {
         noCompress 'filamat', 'ktx'
     }
     namespace 'io.github.sceneview.sample.arcursorplacement'
+    buildFeatures {
+        viewBinding = true
+    }
+    viewBinding {
+        enabled = true
+    }
 }
-
+configurations {
+    all*.exclude group: 'junit', module: 'junit'
+    all*.exclude group: 'org.hamcrest', module: 'hamcrest-core'
+}
 dependencies {
     implementation project(":samples:common")
-    implementation "androidx.constraintlayout:constraintlayout:2.1.4" // use the latest version
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+    implementation 'org.testng:testng:6.9.6'
+    implementation 'androidx.test:monitor:1.6.1'// use the latest version
 
     // ArSceneView
     releaseImplementation "io.github.sceneview:arsceneview:0.10.2"
     debugImplementation project(":arsceneview")
+
+    //android
+    implementation ("com.android.volley:volley:1.2.1")
+
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.10.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+//    implementation("androidx.navigation:navigation-fragment-ktx:2.7.4")
+    implementation("androidx.navigation:navigation-ui-ktx:2.7.4")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation ('com.google.guava:guava:21.0') {
+        exclude group: 'com.google.guava', module: 'listenablefuture'
+    }
+    implementation ("com.google.guava:guava:27.0.1-android")
+    implementation 'androidx.navigation:navigation-fragment:2.7.4'
+    implementation 'androidx.navigation:navigation-ui:2.7.4'
+    implementation 'androidx.fragment:fragment:1.6.1'
+
+//    testImplementation("junit:junit:4.13.2")
+//    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+//    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+
 }

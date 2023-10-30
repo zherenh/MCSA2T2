@@ -277,7 +277,9 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
 
         //record model has been placed
         val placedModel = PlacedModel(modelNode?.anchor, anchorPose?.translation,modelNode?.rotation, currentItem)
+        Log.e("nextTask:,model",placedModel.anchor?.pose.toString())
         modelPlaceList.add(placedModel)
+
 
     }
     override fun onModelClick(model: Model) {
@@ -457,6 +459,11 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
             hideAddButton = false
             return
         }
+
+         for (item in anchors) {
+             Log.e("nextTask",item.pose.toString())
+         }
+
 //         addNodeBtn.isGone = hideAddButton == true
 //         anchorButton.isVisible= hideAddButton==true
          updateButtonVisibility(hideAddButton)
