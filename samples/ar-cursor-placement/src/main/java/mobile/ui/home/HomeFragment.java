@@ -10,10 +10,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.TextView;
-
+import android.widget.Button;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
+import android.content.Intent;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
@@ -22,6 +24,9 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
+
+import io.github.sceneview.sample.arcursorplacement.Activity;
+import io.github.sceneview.sample.arcursorplacement.MainFragment;
 import io.github.sceneview.sample.arcursorplacement.R;
 import io.github.sceneview.sample.arcursorplacement.databinding.FragmentHomeBinding;
 
@@ -73,6 +78,26 @@ public class HomeFragment extends Fragment {
             }
         });
         makeRequest();
+        // Inside your onCreateView method in HomeFragment
+//        binding.arscenebutton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                // Start the MainFragment.kt
+//                FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
+//                transaction.replace(R.id.container, new MainFragment()); // Assuming `R.id.container` is the ID of your fragment container. Adjust as necessary.
+//                transaction.addToBackStack(null);
+//                transaction.commit();
+//            }
+//        });
+
+        binding.arscenebutton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getActivity(), Activity.class);
+                startActivity(intent);
+            }
+        });
+
 
         final TextView textView = binding.textHome;
         homeViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
@@ -125,7 +150,11 @@ public class HomeFragment extends Fragment {
                         }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("stock", error.getMessage());
+                        if(error.getMessage() != null) {
+                            Log.d("stock", error.getMessage());
+                        } else {
+                            Log.d("stock", "Error occurred, but error message is null");
+                        }
                     }
                 });
         // due to long response time, we need to add a long delay time
