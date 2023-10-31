@@ -36,6 +36,15 @@ import java.io.IOException
 import io.github.sceneview.sample.arcursorplacement.ModelsAdapter as ModelsAdapter
 
 
+import com.google.gson.Gson
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+
 lateinit var newVector: Vector3
 lateinit var lastVector: Vector3
 var placeFlag=false
@@ -55,8 +64,13 @@ data class PlacedModel(
     val anchor: Anchor?,
     val position: FloatArray?,
     val rotation: Float3?,
-    val model: Model  // assuming Model is your 3D model class
+    val model: Model,  // assuming Model is your 3D model class
+    val scale: Scale? = null
 )
+data class AnchorData(val x: Float, val y: Float, val z: Float)
+data class ModelData(val x: Float, val y: Float, val z: Float,val rotation: Float?, val scale: Scale?,val fileLocation:String)
+//data class ModelData(val x: Float, val y: Float, val z: Float,val rotation: Float?, val scale: Float?,val fileLocation:String)
+
 class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
 
 
@@ -66,6 +80,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
     var anchors: MutableList<Anchor> = mutableListOf()
     var modelPlaceList = mutableListOf<PlacedModel>()
     var recordCount: Int = 0
+    var currentScale: Float = 1.0f
     var lastAnchor: Anchor? = null
 
     lateinit var sceneView: ArSceneView
@@ -74,6 +89,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
     lateinit var webView:WebView
     lateinit var anchorButton: ExtendedFloatingActionButton
     lateinit var placeBtn: ExtendedFloatingActionButton
+    lateinit var doneBtn: ExtendedFloatingActionButton
     lateinit var addNodeBtn: ExtendedFloatingActionButton
     var sphereModelInstance: ModelInstance? = null
     lateinit var cursorNode: CursorNode
@@ -83,6 +99,9 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
     var modelInstance: ModelInstance? = null
     var lineScale = 0.005f
     lateinit var cubeModelInstance: ModelInstance
+
+    val gson = Gson()
+    val client = OkHttpClient()
 
     var isLoading = false
         set(value) {
@@ -175,6 +194,12 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
             }
         }
         placeBtn.setIconResource(R.drawable.ic_target)
+        doneBtn=view.findViewById<ExtendedFloatingActionButton>(R.id.doneBtn).apply {
+            setOnClickListener {
+                doneAndGenerate()
+            }
+        }
+
         sceneView = view.findViewById<ArSceneView?>(R.id.sceneView).apply {
 
             planeRenderer.isVisible = false
@@ -207,7 +232,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         modelsView.adapter=modelsAdaptor
         modelsView.isVisible=false
         placeBtn.isVisible=false
-
+        doneBtn.isVisible=false
 
 
 
@@ -276,14 +301,23 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         } ?: "Unknown position"
 
         //record model has been placed
-        val placedModel = PlacedModel(modelNode?.anchor, anchorPose?.translation,modelNode?.rotation, currentItem)
+        val placedModel = PlacedModel(modelNode?.anchor, anchorPose?.translation,
+            modelNode?.modelRotation, currentItem,
+            modelNode?.modelScale)
+
+
+
         Log.e("nextTask:,model",placedModel.anchor?.pose.toString())
+        Log.e("doneAndGenerate--:,model",placedModel.rotation.toString())
+        Log.e("doneAndGenerate--:","place"+placedModel.toString())
         modelPlaceList.add(placedModel)
+        doneBtn.isVisible=true
 
 
     }
     override fun onModelClick(model: Model) {
 
+        doneBtn.isVisible =false
         isLoading = true
         modelNode?.takeIf { !it.isAnchored }?.let {
             sceneView.removeChild(it)
@@ -308,6 +342,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
             }
             onHitResult = { node, _ ->
                 placeBtn.isGone = !node.isTracking
+
             }
         }
         sceneView.addChild(modelNode!!)
@@ -475,11 +510,54 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         }
     }
 
+//    fun afterModelPlaceVisibility(){
+//        modelsView.isVisible=false
+//        placeBtn.isVisible=false
+//        hideAddButton = false
+//        updateButtonVisibility(hideAddButton)
+//    }
+
 
     fun doneAndGenerate(){
-//        webView.isVisiable=true
+        Log.e("doneAndGenerate","executed")
+        val layoutPositions = anchors.map { anchor ->
+            val pose = anchor.pose
+            AnchorData(pose.tx(), pose.ty(), pose.tz())
+        }
+        Log.e("doneAndGenerate","before-map"+modelPlaceList.toString())
+        val modelsPositions = modelPlaceList.map {
+            val pose = it.anchor?.pose
+            ModelData(pose?.tx()!!, pose.ty(), pose.tz(),it.rotation?.y,it.scale,it.model.fileLocation)
+//            ModelData(pose?.tx()!!, pose.ty(), pose.tz(),it.rotation?.y,it.model.scaleUnits,it.model.fileLocation)
+        }
+        Log.e("doneAndGenerate","after-map"+modelsPositions.toString())
+
+        val data = mapOf("layoutPositions" to layoutPositions, "modelsPositions" to modelsPositions)
+        val jsonData = gson.toJson(data)
+        isLoading=true
+        val body = jsonData.toRequestBody("application/json".toMediaTypeOrNull())
+        val request = Request.Builder()
+            .url("http://localhost:8080/scene")
+            .post(body)
+            .build()
+        Log.e("doneAndGenerate",jsonData.toString())
+        Log.e("doneAndGenerate",request.toString())
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    isLoading=false
+                    Log.e("doneAndGenerate",response.body.toString())
+                    // Handle response
+                }
+            }
+        })
+
     }
-    fun loadModelsFromAssets(context: Context, folder: String, scale: Float = 0.5f): List<Model> {
+    fun loadModelsFromAssets(context: Context, folder: String, scale: Float = 0.6f): List<Model> {
         val models = mutableListOf<Model>()
         try {
             val assets = context.assets.list(folder)
@@ -518,5 +596,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
 
 
 }
+
+
 
 

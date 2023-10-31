@@ -20,12 +20,6 @@ class Activity : AppCompatActivity(R.layout.activity) {
             fitsSystemWindows = false
         )
 
-//        setSupportActionBar(findViewById<Toolbar>(R.id.toolbar)?.apply {
-//            doOnApplyWindowInsets { systemBarsInsets ->
-//                (layoutParams as ViewGroup.MarginLayoutParams).topMargin = systemBarsInsets.top
-//            }
-//            title = ""
-//        })
 
         supportFragmentManager.commit {
             add(R.id.containerFragment, MainFragment::class.java, Bundle())

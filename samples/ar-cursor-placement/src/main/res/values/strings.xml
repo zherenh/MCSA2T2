@@ -8,4 +8,5 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Map</string>
     <string name="title_notifications">List</string>
+    <string name="done">Done</string>
 </resources>

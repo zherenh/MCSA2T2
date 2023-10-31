@@ -64,6 +64,8 @@ dependencies {
     implementation ('com.google.guava:guava:21.0') {
         exclude group: 'com.google.guava', module: 'listenablefuture'
     }
+    implementation ('com.squareup.okhttp3:okhttp:4.9.3')
+    implementation ('com.google.code.gson:gson:2.8.8')
     implementation ("com.google.guava:guava:27.0.1-android")
     implementation 'androidx.navigation:navigation-fragment:2.7.4'
     implementation 'androidx.navigation:navigation-ui:2.7.4'
