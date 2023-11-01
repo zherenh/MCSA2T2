@@ -44,7 +44,12 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.Manifest
+import android.content.pm.PackageManager
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 lateinit var newVector: Vector3
 lateinit var lastVector: Vector3
 var placeFlag=false
@@ -82,7 +87,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
     var recordCount: Int = 0
     var currentScale: Float = 1.0f
     var lastAnchor: Anchor? = null
-
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
     lateinit var sceneView: ArSceneView
     lateinit var loadingView: View
     lateinit var modelsView: RecyclerView
@@ -111,11 +116,14 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
 //            addNodeBtn.isGone = value
         }
 
-
+    companion object {
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+    }
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
         loadingView = view.findViewById(R.id.loadingView)
         modelsView=view.findViewById(R.id.modelsRV)
@@ -518,45 +526,127 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
 //    }
 
 
-    fun doneAndGenerate(){
-        Log.e("doneAndGenerate","executed")
-        val layoutPositions = anchors.map { anchor ->
-            val pose = anchor.pose
-            AnchorData(pose.tx(), pose.ty(), pose.tz())
-        }
-        Log.e("doneAndGenerate","before-map"+modelPlaceList.toString())
-        val modelsPositions = modelPlaceList.map {
-            val pose = it.anchor?.pose
-            ModelData(pose?.tx()!!, pose.ty(), pose.tz(),it.rotation?.y,it.scale,it.model.fileLocation)
-//            ModelData(pose?.tx()!!, pose.ty(), pose.tz(),it.rotation?.y,it.model.scaleUnits,it.model.fileLocation)
-        }
-        Log.e("doneAndGenerate","after-map"+modelsPositions.toString())
+//    fun doneAndGenerate(){
+//        Log.e("doneAndGenerate","executed")
+//        val layoutPositions = anchors.map { anchor ->
+//            val pose = anchor.pose
+//            AnchorData(pose.tx(), pose.ty(), pose.tz())
+//        }
+//        Log.e("doneAndGenerate","before-map"+modelPlaceList.toString())
+//        val modelsPositions = modelPlaceList.map {
+//            val pose = it.anchor?.pose
+//            ModelData(pose?.tx()!!, pose.ty(), pose.tz(),it.rotation?.y,it.scale,it.model.fileLocation)
+////            ModelData(pose?.tx()!!, pose.ty(), pose.tz(),it.rotation?.y,it.model.scaleUnits,it.model.fileLocation)
+//        }
+//        Log.e("doneAndGenerate","after-map"+modelsPositions.toString())
+//
+//        val data = mapOf("layoutPositions" to layoutPositions, "modelsPositions" to modelsPositions)
+//        val jsonData = gson.toJson(data)
+//        isLoading=true
+//        val body = jsonData.toRequestBody("application/json".toMediaTypeOrNull())
+//        val request = Request.Builder()
+//            .url("https://mobiles-2a62216dada4.herokuapp.com/scene")
+//            .post(body)
+//            .build()
+//        Log.e("doneAndGenerate",jsonData.toString())
+//        Log.e("doneAndGenerate",request.toString())
+//        client.newCall(request).enqueue(object : Callback {
+//            override fun onFailure(call: Call, e: IOException) {
+//                e.printStackTrace()
+//            }
+//
+//            override fun onResponse(call: Call, response: Response) {
+////                if (response.isSuccessful) {
+////                    isLoading=false
+////                    Log.e("doneAndGenerate",response.body.toString())
+////                    // Handle response
+////                }
+//                activity?.runOnUiThread() {
+//                    if (response.isSuccessful) {
+//                        isLoading = false
+//                        Log.e("doneAndGenerate", "Request failed with code: ${response.code}")
+//                        Log.e("doneAndGenerate", response.body.toString())
+//
+//                        activity?.finish()
+//                    } else {
+//                        // Handle the error
+//
+//                    }
+//                }
+//            }
+//        })
+//
+//    }
 
-        val data = mapOf("layoutPositions" to layoutPositions, "modelsPositions" to modelsPositions)
-        val jsonData = gson.toJson(data)
-        isLoading=true
-        val body = jsonData.toRequestBody("application/json".toMediaTypeOrNull())
-        val request = Request.Builder()
-            .url("http://localhost:8080/scene")
-            .post(body)
-            .build()
-        Log.e("doneAndGenerate",jsonData.toString())
-        Log.e("doneAndGenerate",request.toString())
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
+    fun doneAndGenerate() {
+        Log.e("doneAndGenerate", "executed")
+
+        getLocation(object : LocationCallback {
+            override fun onLocationResult(latitude: Double, longitude: Double, altitude: Double) {
+                val layoutPositions = anchors.map { anchor ->
+                    val pose = anchor.pose
+                    AnchorData(pose.tx(), pose.ty(), pose.tz())
+                }
+                Log.e("doneAndGenerate", "before-map" + modelPlaceList.toString())
+                val modelsPositions = modelPlaceList.map {
+                    val pose = it.anchor?.pose
+                    ModelData(pose?.tx()!!, pose.ty(), pose.tz(), it.rotation?.y, it.scale, it.model.fileLocation)
+                }
+                Log.e("doneAndGenerate", "after-map" + modelsPositions.toString())
+
+                // Include location data in your request
+                val data = mapOf(
+                    "layoutPositions" to layoutPositions,
+                    "modelsPositions" to modelsPositions,
+                    "latitude" to latitude,
+                    "longitude" to longitude,
+                    "altitude" to altitude
+                )
+
+                val jsonData = gson.toJson(data)
+                isLoading = true
+                val body = jsonData.toRequestBody("application/json".toMediaTypeOrNull())
+                val request = Request.Builder()
+                    .url("https://mobiles-2a62216dada4.herokuapp.com/scene")
+                    .post(body)
+                    .build()
+                Log.e("doneAndGenerate", jsonData.toString())
+                Log.e("doneAndGenerate", request.toString())
+                client.newCall(request).enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        e.printStackTrace()
+                    }
+
+                    override fun onResponse(call: Call, response: Response) {
+                        activity?.runOnUiThread {
+                            if (response.isSuccessful) {
+                                isLoading = false
+                                Log.e("doneAndGenerate", "Request successful with code: ${response.code}")
+                                Log.e("doneAndGenerate", response.body.toString())
+                                // Handle response
+                                // Close the current activity and return to the previous one
+                                activity?.finish()
+                            } else {
+                                Log.e("doneAndGenerate", "Request failed with code: ${response.code}")
+                                // Handle the error
+                            }
+                        }
+                    }
+                })
             }
 
-            override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
-                    isLoading=false
-                    Log.e("doneAndGenerate",response.body.toString())
-                    // Handle response
-                }
+            override fun onPermissionDenied() {
+                Log.e("doneAndGenerate", "Location permission denied")
+                // Handle the case where permissions are denied
+            }
+
+            override fun onLocationUnavailable() {
+                Log.e("doneAndGenerate", "Location is unavailable")
+                // Handle the case where location is unavailable
             }
         })
-
     }
+
     fun loadModelsFromAssets(context: Context, folder: String, scale: Float = 0.6f): List<Model> {
         val models = mutableListOf<Model>()
         try {
@@ -575,23 +665,50 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         }
         return models
     }
-    fun updateButton() {
-        // Define your condition for updating the button
-        val shouldUpdateButton = //... your_condition_to_change_button ...
+//    fun updateButton() {
+//        // Define your condition for updating the button
+//        val shouldUpdateButton = //... your_condition_to_change_button ...
+//
+//            // Run on UI thread to safely update UI components
+//            activity?.runOnUiThread {
+//                if (hideAddButton) {
+//                    // Set new text on the button
+//                    addNodeBtn.setText("New Button Text")
+//
+//                    // Set new OnClickListener with new action
+//                    addNodeBtn.setOnClickListener {
+//                        // New onClick action here
+//                        // ...
+//                    }
+//                }
+//            }
+//    }
 
-            // Run on UI thread to safely update UI components
-            activity?.runOnUiThread {
-                if (hideAddButton) {
-                    // Set new text on the button
-                    addNodeBtn.setText("New Button Text")
 
-                    // Set new OnClickListener with new action
-                    addNodeBtn.setOnClickListener {
-                        // New onClick action here
-                        // ...
-                    }
+    private fun getLocation(callback: LocationCallback) {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                requireActivity(),
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+            callback.onPermissionDenied()
+        } else {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    val latitude = location.latitude
+                    val longitude = location.longitude
+                    val altitude = location.altitude
+                    callback.onLocationResult(latitude, longitude, altitude)
+                } else {
+                    callback.onLocationUnavailable()
                 }
             }
+        }
     }
 
 

@@ -16,7 +16,6 @@ import io.github.sceneview.nodes.ViewNode
 class MainFragment : Fragment(R.layout.fragment_main) {
 
     lateinit var sceneView: SceneView
-    lateinit var loadingView: View
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -24,7 +23,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         sceneView = view.findViewById<SceneView>(R.id.sceneView).apply {
             setLifecycle(lifecycle)
         }
-        loadingView = view.findViewById(R.id.loadingView)
+
 
         lifecycleScope.launchWhenCreated {
             val hdrFile = "environments/studio_small_09_2k.hdr"
@@ -59,7 +58,6 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             }
             sceneView.addChildNode(viewNode)
 
-            loadingView.isGone = true
         }
     }
 }
