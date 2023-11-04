@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+<script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@0.134.0/src/Three.js';
+    import { OrbitControls } from 'https://cdn.skypack.dev/three@0.134.0/examples/jsm/controls/OrbitControls.js';
+    import Stats from 'https://cdn.skypack.dev/three@0.134.0/examples/jsm/libs/stats.module.js';
+    import { GLTFLoader } from "https://cdn.skypack.dev/three@0.134.0/examples/jsm/loaders/GLTFLoader.js";
+    import { FBXLoader } from "https://cdn.skypack.dev/three@0.134.0/examples/jsm/loaders/FBXLoader.js";
+    import { OBJExporter } from 'https://cdn.skypack.dev/three@0.134.0/examples/jsm/exporters/OBJExporter.js';
+    import { GLTFExporter } from 'https://cdn.skypack.dev/three@0.134.0/examples/jsm/exporters/GLTFExporter.js';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(1, 1, 1).normalize();
+    scene.add(directionalLight);
+    camera.position.set(0, 0, 3);
+    controls.update();
+
+    const layoutMesh = createLayoutMesh([]);
+    scene.add(layoutMesh);
+
+    let sofaModel = null;
+
+    window.AndroidInterface = {
+        receiveAnchorsData: function (anchorsJson) {
+            const anchorsList = JSON.parse(anchorsJson);
+            updateLayoutMesh(anchorsList);
+        },
+        receiveModelPlacementData: function (modelPlacementJson) {
+            const modelPlacementList = JSON.parse(modelPlacementJson);
+            placeModel(modelPlacementList);
+        }
+    };
+
+    function updateLayoutMesh(anchorsList) {
+        const layoutPositions = anchorsList.map(anchor => new THREE.Vector3(anchor.x, anchor.y, anchor.z));
+        const layoutShape = new THREE.Shape();
+        layoutShape.moveTo(layoutPositions[0].x, layoutPositions[0].z);
+        for (let i = 1; i < layoutPositions.length; i++) {
+            layoutShape.lineTo(layoutPositions[i].x, layoutPositions[i].z);
+        }
+        layoutShape.lineTo(layoutPositions[0].x, layoutPositions[0].z);
+        const layoutExtrudeSettings = {
+            steps: 1,
+            depth: 0.05,
+            bevelEnabled: false
+        };
+        const layoutGeometry = new THREE.ExtrudeGeometry(layoutShape, layoutExtrudeSettings);
+        layoutMesh.geometry.dispose();
+        layoutMesh.geometry = layoutGeometry;
+        const layoutCentroid = layoutPositions.reduce((sum, pos) => sum.add(pos), new THREE.Vector3()).divideScalar(layoutPositions.length);
+        layoutMesh.position.set(layoutCentroid.x, layoutCentroid.y - 0.05 / 2, layoutCentroid.z);
+        console.log(layoutMesh.position);
+        layoutMesh.rotation.x = Math.PI / 2;
+    }
+
+    function placeModel(modelPlacementList) {
+        if (!sofaModel) return;
+        const placement = modelPlacementList[0];
+        sofaModel.position.set(placement.x, 0, placement.z);
+    }
+
+    function createLayoutMesh(anchorsList) {
+        const layoutGeometry = new THREE.BufferGeometry();
+        const layoutMaterial = new THREE.MeshBasicMaterial({ color: 0x808080, wireframe: false });
+        return new THREE.Mesh(layoutGeometry, layoutMaterial);
+    }
+
+    const sofaLoader = new GLTFLoader();
+    sofaLoader.load('https://appassets.androidplatform.net/files/models/desk.glb', (gltf) => {
+        sofaModel = gltf.scene;
+        sofaModel.scale.set(0.3, 0.3, 0.3);
+        scene.add(sofaModel);
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    function exportScene() {
+        const exporter = new GLTFExporter();
+        exporter.parse(scene, function (result) {
+            const output = JSON.stringify(result, null, 2);
+            const blob = new Blob([output], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'scene.gltf';
+            a.click();
+        }, { binary: false });
+    }
+</script>
+
+</body>
+</html>
+
+
+
