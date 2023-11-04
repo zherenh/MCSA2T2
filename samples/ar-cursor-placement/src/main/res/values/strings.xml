@@ -7,6 +7,11 @@
     <string name="app_name">Mobile</string>
     <string name="title_home">Home</string>
     <string name="title_dashboard">Map</string>
-    <string name="title_notifications">List</string>
     <string name="done">Done</string>
+
+    <string name="title_notifications">Profile</string>
+    <string name="map_key" translatable="false">AIzaSyD4KfDcLVjVPatpIKtrPXot024Z4UHVZQ8</string>
+    <string name="permission_required_toast">Permission is required for map.</string>
+    <string name="location_permission_denied">Location permission denied.</string>
+    <string name="permission_rationale_location">Location permission is required for map.</string>
 </resources>
