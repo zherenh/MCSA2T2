@@ -28,7 +28,7 @@ class ModelsAdapter(private val items: List<Model>, private val listener: OnMode
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         Log.e("ModelsAdapter","onBindViewHolder")
         val model=items[position]
-        model.modelImage?.let { holder.modelImage.setImageResource(model.modelImage) }
+        model.modelImage?.let { holder.modelImage.setImageBitmap(model.modelImage) }
         holder.modelName.text=model.displayName
         holder.itemView.setOnClickListener {
             listener.onModelClick(model)

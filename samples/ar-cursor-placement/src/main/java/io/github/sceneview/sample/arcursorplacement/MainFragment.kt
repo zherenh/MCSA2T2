@@ -1,22 +1,31 @@
 package io.github.sceneview.sample.arcursorplacement
 
+
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.webkit.WebView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.ar.core.Anchor
 import com.google.ar.core.HitResult
 import com.google.ar.sceneform.math.Quaternion
 import com.google.ar.sceneform.math.Vector3
+import com.google.gson.Gson
 import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.SceneView
 import io.github.sceneview.ar.ArSceneView
@@ -32,11 +41,6 @@ import io.github.sceneview.model.GLBLoader
 import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.utils.Color
 import kotlinx.coroutines.delay
-import java.io.IOException
-import io.github.sceneview.sample.arcursorplacement.ModelsAdapter as ModelsAdapter
-
-
-import com.google.gson.Gson
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -44,21 +48,21 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import android.Manifest
-import android.content.pm.PackageManager
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import java.io.IOException
+import android.graphics.BitmapFactory
+import java.io.File
+
+
 lateinit var newVector: Vector3
 lateinit var lastVector: Vector3
-var placeFlag=false
+var placeFlag = false
 var hideAddButton = false
-lateinit var currentItem:Model
+lateinit var currentItem: Model
+
 data class Model(
     val fileLocation: String,
     val displayName: String, // Add this line
-    val modelImage: Int?=0,
+    val modelImage: Bitmap?,
     val scaleUnits: Float? = null,
     val placementMode: PlacementMode = PlacementMode.BEST_AVAILABLE,
     val applyPoseRotation: Boolean = true
@@ -72,14 +76,18 @@ data class PlacedModel(
     val model: Model,  // assuming Model is your 3D model class
     val scale: Scale? = null
 )
+
 data class AnchorData(val x: Float, val y: Float, val z: Float)
-data class ModelData(val x: Float, val y: Float, val z: Float,val rotation: Float?, val scale: Scale?,val fileLocation:String)
-//data class ModelData(val x: Float, val y: Float, val z: Float,val rotation: Float?, val scale: Float?,val fileLocation:String)
+data class ModelData(
+    val x: Float,
+    val y: Float,
+    val z: Float,
+    val rotation: Float?,
+    val scale: Scale?,
+    val fileLocation: String
+)
 
 class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
-
-
-
 
 
     var anchors: MutableList<Anchor> = mutableListOf()
@@ -91,7 +99,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
     lateinit var sceneView: ArSceneView
     lateinit var loadingView: View
     lateinit var modelsView: RecyclerView
-    lateinit var webView:WebView
+    lateinit var webView: WebView
     lateinit var anchorButton: ExtendedFloatingActionButton
     lateinit var placeBtn: ExtendedFloatingActionButton
     lateinit var doneBtn: ExtendedFloatingActionButton
@@ -99,7 +107,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
     var sphereModelInstance: ModelInstance? = null
     lateinit var cursorNode: CursorNode
     var modelNode: ArModelNode? = null
-    var lineColor =  Color(1.0f, 1.0f, 1.0f, 1.0f)
+    var lineColor = Color(1.0f, 1.0f, 1.0f, 1.0f)
     var placedLines = mutableListOf<ArNode>()
     var modelInstance: ModelInstance? = null
     var lineScale = 0.005f
@@ -126,7 +134,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
         loadingView = view.findViewById(R.id.loadingView)
-        modelsView=view.findViewById(R.id.modelsRV)
+        modelsView = view.findViewById(R.id.modelsRV)
 
 
 //        anchorButton = view.findViewById<ExtendedFloatingActionButton>(R.id.anchorButton).apply {
@@ -145,7 +153,6 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
                     lastAnchor?.let { lastAnchor ->
 
 
-
                         val newPose = newAnchor.pose
                         val lastPose = lastAnchor.pose
 
@@ -157,10 +164,14 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
                         val distance = Math.sqrt((dx * dx + dy * dy + dz * dz).toDouble())
                         val distanceInCm = distance * 100
 
-                        Toast.makeText(context, "Distance between anchors: ${String.format("%.2f", distanceInCm)} m", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "Distance between anchors: ${String.format("%.2f", distanceInCm)} m",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         newVector = Vector3(newPose.tx(), newPose.ty(), newPose.tz())
                         lastVector = Vector3(lastPose.tx(), lastPose.ty(), lastPose.tz())
-                        placeFlag=true
+                        placeFlag = true
                         updateDistance()
 
                     }
@@ -172,14 +183,26 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
                     anchors.add(newAnchor)
                     Log.d("DEBUG", "Anchor created successfully") // Log
                     try {
-                        sceneView.addChild(ArModelNode(sceneView.engine,"layoutModel/sphere.glb",true,0.05f).apply {
-                            Log.d("DEBUG", "Model instance set: $modelInstance") // Log for debugging
-                            anchor = newAnchor // Set the anchor
-                            parent = sceneView // Set the parent of the node to the sceneView
-                            Log.d("DEBUG", "Node added to scene") // Log for debugging
-                        })
+                        sceneView.addChild(
+                            ArModelNode(
+                                sceneView.engine,
+                                "layoutModel/sphere.glb",
+                                true,
+                                0.05f
+                            ).apply {
+                                Log.d(
+                                    "DEBUG",
+                                    "Model instance set: $modelInstance"
+                                ) // Log for debugging
+                                anchor = newAnchor // Set the anchor
+                                parent = sceneView // Set the parent of the node to the sceneView
+                                Log.d("DEBUG", "Node added to scene") // Log for debugging
+                            })
                     } catch (e: Exception) {
-                        Log.e("ERROR", "Error adding node to scene: ${e.message}") // Log error message
+                        Log.e(
+                            "ERROR",
+                            "Error adding node to scene: ${e.message}"
+                        ) // Log error message
                     }
 
 
@@ -188,21 +211,25 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
                         "x: ${it[0]}, y: ${it[1]}, z: ${it[2]}"
                     }
                     // Display Toast with record count and position
-                    Toast.makeText(context, "Record count: $recordCount at position $position", Toast.LENGTH_SHORT).show()
-                    Log.e("pos:",position)
-                    Log.e("anchors",anchors.toString())
+                    Toast.makeText(
+                        context,
+                        "Record count: $recordCount at position $position",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    Log.e("pos:", position)
+                    Log.e("anchors", anchors.toString())
                 }
             }
         }
         addNodeBtn.setIconResource(R.drawable.ic_target)
 
-        placeBtn =view.findViewById<ExtendedFloatingActionButton>(R.id.placeGLBBtn).apply {
+        placeBtn = view.findViewById<ExtendedFloatingActionButton>(R.id.placeGLBBtn).apply {
             setOnClickListener {
                 setOnClickListener { placeModelNode() }
             }
         }
         placeBtn.setIconResource(R.drawable.ic_target)
-        doneBtn=view.findViewById<ExtendedFloatingActionButton>(R.id.doneBtn).apply {
+        doneBtn = view.findViewById<ExtendedFloatingActionButton>(R.id.doneBtn).apply {
             setOnClickListener {
                 doneAndGenerate()
             }
@@ -234,13 +261,14 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         }
         sceneView.addChild(cursorNode)
         //recycler view
-        modelsView.layoutManager=LinearLayoutManager(requireContext(),LinearLayoutManager.VERTICAL,false)
-        val models=loadModelsFromAssets(requireContext(),"models")
-        val modelsAdaptor= ModelsAdapter(models,this@MainFragment)
-        modelsView.adapter=modelsAdaptor
-        modelsView.isVisible=false
-        placeBtn.isVisible=false
-        doneBtn.isVisible=false
+        modelsView.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+        val models = loadModelsFromFiles(requireContext())
+        val modelsAdaptor = ModelsAdapter(models, this@MainFragment)
+        modelsView.adapter = modelsAdaptor
+        modelsView.isVisible = false
+        placeBtn.isVisible = false
+        doneBtn.isVisible = false
 
 
 
@@ -248,7 +276,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         lifecycleScope.launchWhenCreated {
             modelInstance = GLBLoader.loadModelInstance(
                 context = requireContext(),
-                glbFileLocation = "models/bed.glb"
+                glbFileLocation = "layoutModel/cube.glb"
             )
 
             cubeModelInstance = GLBLoader.loadModelInstance(
@@ -269,16 +297,14 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
             while (true) {
 //                updateDistance()
                 try {
-                    addLineBetweenPoints(cursorNode.hitResult!!, sceneView, lastVector, newVector )
-                    Log.e("lineAdd","line added")
-                }catch (e:Exception){
+                    addLineBetweenPoints(cursorNode.hitResult!!, sceneView, lastVector, newVector)
+                    Log.e("lineAdd", "line added")
+                } catch (e: Exception) {
                     Log.e("ERROR", "Error adding line to scene: ${e.message}")
                 }
                 nextTask()
                 delay(1000)
             }
-
-
 
 
         }
@@ -309,23 +335,26 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         } ?: "Unknown position"
 
         //record model has been placed
-        val placedModel = PlacedModel(modelNode?.anchor, anchorPose?.translation,
+        val placedModel = PlacedModel(
+            modelNode?.anchor, anchorPose?.translation,
             modelNode?.modelRotation, currentItem,
-            modelNode?.modelScale)
+            modelNode?.modelScale
+        )
 
 
 
-        Log.e("nextTask:,model",placedModel.anchor?.pose.toString())
-        Log.e("doneAndGenerate--:,model",placedModel.rotation.toString())
-        Log.e("doneAndGenerate--:","place"+placedModel.toString())
+        Log.e("nextTask:,model", placedModel.anchor?.pose.toString())
+        Log.e("doneAndGenerate--:,model", placedModel.rotation.toString())
+        Log.e("doneAndGenerate--:", "place" + placedModel.toString())
         modelPlaceList.add(placedModel)
-        doneBtn.isVisible=true
+        doneBtn.isVisible = true
 
 
     }
+
     override fun onModelClick(model: Model) {
 
-        doneBtn.isVisible =false
+        doneBtn.isVisible = false
         isLoading = true
         modelNode?.takeIf { !it.isAnchored }?.let {
             sceneView.removeChild(it)
@@ -356,7 +385,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         sceneView.addChild(modelNode!!)
         // Select the model node by default (the model node is also selected on tap)
         sceneView.selectedNode = modelNode
-        currentItem=model
+        currentItem = model
     }
 
     // update the distance between lastAnchor and current position of the CursorNode in camera
@@ -379,17 +408,26 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
             val distanceInCm = distance * 100
 
             // Update the UI with the calculated distance
-            Toast.makeText(context, "anchor and current position have : ${String.format("%.2f", distanceInCm)} cm", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                context,
+                "anchor and current position have : ${String.format("%.2f", distanceInCm)} cm",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
 
     }
 
 
-    suspend fun addLineBetweenPoints(hitResult: HitResult, scene: SceneView, from: Vector3, to: Vector3) {
+    suspend fun addLineBetweenPoints(
+        hitResult: HitResult,
+        scene: SceneView,
+        from: Vector3,
+        to: Vector3
+    ) {
 
 
-        if (placeFlag==true) {
+        if (placeFlag == true) {
             Log.e("lineThings", hitResult.toString())
             Log.e("lineThings", "from:$from")
             Log.e("lineThings", "to:$to")
@@ -408,7 +446,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
             anchorNode.parent = sceneView
 
             // Compute a line's length
-            val lineLength = Vector3.subtract(from, to).length()*1.5f
+            val lineLength = Vector3.subtract(from, to).length() * 1.5f
 
 
             // Ensure you have a valid context here. Handle the case where requireContext() might return null.
@@ -463,7 +501,7 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
     }
 
     fun disCursorToFirstAnchor(): Double {
-        if (anchors.isNotEmpty()&&anchors.size>3) {
+        if (anchors.isNotEmpty() && anchors.size > 3) {
 
             val cursorPos = cursorNode.worldPosition
             val firstPos = anchors[0].pose
@@ -476,26 +514,26 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
 
 
         } else {
-             return Double.MAX_VALUE
+            return Double.MAX_VALUE
         }
     }
 
-     suspend fun nextTask(){
+    suspend fun nextTask() {
 
-        if (disCursorToFirstAnchor()<0.1){
-            modelsView.isVisible=true
-            placeBtn.isVisible=true
+        if (disCursorToFirstAnchor() < 0.1) {
+            modelsView.isVisible = true
+            placeBtn.isVisible = true
             hideAddButton = true
             val firstPos = anchors[0].pose
             val firstPosVector = Vector3(firstPos.tx(), firstPos.ty(), firstPos.tz())
             try {
-                Log.e("lineAdd","$lastVector,  $firstPosVector")
-                lastVector= newVector
-                placeFlag=true
-                addLineBetweenPoints(cursorNode.hitResult!!, sceneView,  lastVector, firstPosVector)
-                Log.e("lineAdd","next line added")
-                placeFlag=false
-            }catch (e:Exception) {
+                Log.e("lineAdd", "$lastVector,  $firstPosVector")
+                lastVector = newVector
+                placeFlag = true
+                addLineBetweenPoints(cursorNode.hitResult!!, sceneView, lastVector, firstPosVector)
+                Log.e("lineAdd", "next line added")
+                placeFlag = false
+            } catch (e: Exception) {
                 Log.e("ERROR", "Error adding line to scene: ${e.message}")
             }
         } else {
@@ -503,14 +541,15 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
             return
         }
 
-         for (item in anchors) {
-             Log.e("nextTask",item.pose.toString())
-         }
+        for (item in anchors) {
+            Log.e("nextTask", item.pose.toString())
+        }
 
 //         addNodeBtn.isGone = hideAddButton == true
 //         anchorButton.isVisible= hideAddButton==true
-         updateButtonVisibility(hideAddButton)
+        updateButtonVisibility(hideAddButton)
     }
+
     fun updateButtonVisibility(hideAddButton: Boolean) {
         activity?.runOnUiThread {
             addNodeBtn.isGone = hideAddButton
@@ -590,7 +629,14 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
                 Log.e("doneAndGenerate", "before-map" + modelPlaceList.toString())
                 val modelsPositions = modelPlaceList.map {
                     val pose = it.anchor?.pose
-                    ModelData(pose?.tx()!!, pose.ty(), pose.tz(), it.rotation?.y, it.scale, it.model.fileLocation)
+                    ModelData(
+                        pose?.tx()!!,
+                        pose.ty(),
+                        pose.tz(),
+                        it.rotation?.y,
+                        it.scale,
+                        it.model.fileLocation
+                    )
                 }
                 Log.e("doneAndGenerate", "after-map" + modelsPositions.toString())
 
@@ -621,13 +667,19 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
                         activity?.runOnUiThread {
                             if (response.isSuccessful) {
                                 isLoading = false
-                                Log.e("doneAndGenerate", "Request successful with code: ${response.code}")
+                                Log.e(
+                                    "doneAndGenerate",
+                                    "Request successful with code: ${response.code}"
+                                )
                                 Log.e("doneAndGenerate", response.body.toString())
                                 // Handle response
                                 // Close the current activity and return to the previous one
                                 activity?.finish()
                             } else {
-                                Log.e("doneAndGenerate", "Request failed with code: ${response.code}")
+                                Log.e(
+                                    "doneAndGenerate",
+                                    "Request failed with code: ${response.code}"
+                                )
                                 // Handle the error
                             }
                         }
@@ -647,24 +699,77 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
         })
     }
 
-    fun loadModelsFromAssets(context: Context, folder: String, scale: Float = 0.6f): List<Model> {
+//    fun loadModelsFromAssets(context: Context, folder: String, scale: Float = 0.6f): List<Model> {
+//        val models = mutableListOf<Model>()
+//        try {
+//            val assets = context.assets.list(folder)
+//            assets?.forEach { asset ->
+//                if (asset.endsWith(".glb")) {
+//                    val displayName =
+//                        asset.substringBeforeLast(".glb") // Extract name without extension
+//                    val modelPath = "$folder/$asset"
+//                    val modelImageResourceName =
+//                        asset.substringBeforeLast(".") // Assuming the drawable name is the same as asset name
+//                    val modelImageResId = context.resources.getIdentifier(
+//                        modelImageResourceName,
+//                        "drawable",
+//                        context.packageName
+//                    )
+//                    models.add(
+//                        Model(
+//                            modelPath,
+//                            displayName,
+//                            modelImageResId,
+//                            scale
+//                        )
+//                    ) // Use correct resource ID
+//                }
+//            }
+//        } catch (e: IOException) {
+//            e.printStackTrace()
+//        }
+//        return models
+//    }
+
+    fun loadModelsFromFiles(context: Context, scale: Float = 0.6f): List<Model> {
         val models = mutableListOf<Model>()
         try {
-            val assets = context.assets.list(folder)
-            assets?.forEach { asset ->
-                if (asset.endsWith(".glb")) {
-                    val displayName = asset.substringBeforeLast(".glb") // Extract name without extension
-                    val modelPath = "$folder/$asset"
-                    val modelImageResourceName = asset.substringBeforeLast(".") // Assuming the drawable name is the same as asset name
-                    val modelImageResId = context.resources.getIdentifier(modelImageResourceName, "drawable", context.packageName)
-                    models.add(Model(modelPath, displayName, modelImageResId, scale)) // Use correct resource ID
+
+            val modelsFolder = File(context.filesDir, "models")
+            val imagesFolder = File(context.filesDir, "images")
+
+            if (modelsFolder.exists() && modelsFolder.isDirectory) {
+                val modelFiles = modelsFolder.listFiles { _, name -> name.endsWith(".glb") }
+
+                modelFiles?.forEach { modelFile ->
+                    val displayName = modelFile.name.substringBeforeLast(".glb")
+
+                    val imageFile = File(imagesFolder, "${displayName}.png") // Assuming images are in PNG format
+                    val modelImageBitmap: Bitmap? = if (imageFile.exists()) {
+                        BitmapFactory.decodeFile(imageFile.absolutePath)
+                    } else {
+                        null
+                    }
+
+                    models.add(
+                        Model(
+                            modelFile.absolutePath,
+                            displayName,
+                            modelImageBitmap,
+                            scale
+                        )
+                    )
                 }
             }
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
+        Log.e("models", models.toString())
+        Log.e("models", models.size.toString())
         return models
     }
+
+
 //    fun updateButton() {
 //        // Define your condition for updating the button
 //        val shouldUpdateButton = //... your_condition_to_change_button ...
@@ -686,14 +791,24 @@ class MainFragment : Fragment(R.layout.fragment_main), OnModelClickListener {
 
 
     private fun getLocation(callback: LocationCallback) {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
             != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) {
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+            != PackageManager.PERMISSION_GRANTED
+        ) {
 
             ActivityCompat.requestPermissions(
                 requireActivity(),
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ),
                 LOCATION_PERMISSION_REQUEST_CODE
             )
             callback.onPermissionDenied()

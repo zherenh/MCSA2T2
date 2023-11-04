@@ -10,10 +10,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.TextView;
-import android.widget.Button;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import android.content.Intent;
 
@@ -26,7 +25,6 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 
 import io.github.sceneview.sample.arcursorplacement.Activity;
-import io.github.sceneview.sample.arcursorplacement.MainFragment;
 import io.github.sceneview.sample.arcursorplacement.R;
 import io.github.sceneview.sample.arcursorplacement.databinding.FragmentHomeBinding;
 
@@ -127,11 +125,11 @@ public class HomeFragment extends Fragment {
                                         Bitmap bitmap = BitmapFactory.decodeByteArray(decodeImage, 0, decodeImage.length);
                                         byte[] glbData = Base64.decode(glbB64, Base64.DEFAULT);
 
-                                        saveByteArrayToInternalStorage(glbData, "model.glb");
+                                        saveByteArrayToInternalStorage(glbData, name+".glb",bitmap, name+".png");
 
-                                        String stringdata =  readStorage();
-                                        String first100Characters = stringdata.substring(stringdata.length() - 100);
-                                        Log.e("requestTest", "stringdata"+first100Characters);
+//                                        String stringdata =  readStorage();
+//                                        String first100Characters = stringdata.substring(stringdata.length() - 100);
+//                                        Log.e("requestTest", "stringdata"+first100Characters);
 
                                         ListData modelItem = new ListData(name, bitmap);
 //                                        ListData modelItem = new ListData(name,"2",0);
@@ -195,36 +193,61 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private void saveByteArrayToInternalStorage(byte[] data, String filename) {
+//    private void saveByteArrayToInternalStorage(byte[] data, String filename, Bitmap bitmap, String s) {
+//        try {
+//
+//            File file = new File(requireContext().getFilesDir(), filename);
+////            File file = new File("app/src/main/res/raw", filename);
+//            Log.e("requestTest", "GLB data saved to internal storage: " + file.getAbsolutePath());
+//            FileOutputStream fos = new FileOutputStream(file);
+//            fos.write(data);
+//            fos.close();
+//            Log.e("requestTest", "GLB data saved to internal storage: " + file.getAbsolutePath());
+//        } catch (IOException e) {
+//            Log.e("requestTest", "Error saving GLB data to internal storage: " + e.getMessage());
+//        }
+//    }
+    private void saveByteArrayToInternalStorage(byte[] data, String modelName, Bitmap bitmap, String imageName) {
         try {
-
-            File file = new File(requireContext().getFilesDir(), filename);
-//            File file = new File("app/src/main/res/raw", filename);
-            Log.e("requestTest", "GLB data saved to internal storage: " + file.getAbsolutePath());
-            FileOutputStream fos = new FileOutputStream(file);
+            // Save the GLB file
+            File modelsDir = new File(getContext().getFilesDir(), "models");
+            if (!modelsDir.exists()) modelsDir.mkdir(); // Create the directory if it doesn't exist
+            File modelFile = new File(modelsDir, modelName);
+            FileOutputStream fos = new FileOutputStream(modelFile);
             fos.write(data);
             fos.close();
-            Log.e("requestTest", "GLB data saved to internal storage: " + file.getAbsolutePath());
+            Log.e("requestTest", "GLB data saved to internal storage: " + modelFile.getAbsolutePath());
+
+            // Save the PNG image
+            File imagesDir = new File(getContext().getFilesDir(), "images");
+            if (!imagesDir.exists()) imagesDir.mkdir(); // Create the directory if it doesn't exist
+            File imageFile = new File(imagesDir, imageName);
+            fos = new FileOutputStream(imageFile);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos); // Compress and write the bitmap to file
+            fos.close();
+            Log.e("requestTest", "Image saved to internal storage: " + imageFile.getAbsolutePath());
+
         } catch (IOException e) {
-            Log.e("requestTest", "Error saving GLB data to internal storage: " + e.getMessage());
+            Log.e("requestTest", "Error saving to internal storage: " + e.getMessage());
         }
     }
 
 
-    private String readStorage() {
-        String base64Data=null;
-        try {
-            File file = new File(requireContext().getFilesDir(), "model.glb"); // 用你的文件名替换 "your_file.glb"
-            FileInputStream fis = new FileInputStream(file);
-            byte[] data = new byte[(int) file.length()];
-            fis.read(data);
-            fis.close();
-            base64Data= Base64.encodeToString(data, Base64.DEFAULT);
-            // 此时，data 变量包含了文件的内容
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return base64Data;
-    }
+
+//    private String readStorage() {
+//        String base64Data=null;
+//        try {
+//            File file = new File(requireContext().getFilesDir(), "model.glb"); // 用你的文件名替换 "your_file.glb"
+//            FileInputStream fis = new FileInputStream(file);
+//            byte[] data = new byte[(int) file.length()];
+//            fis.read(data);
+//            fis.close();
+//            base64Data= Base64.encodeToString(data, Base64.DEFAULT);
+//            // 此时，data 变量包含了文件的内容
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return base64Data;
+//    }
 
 }
