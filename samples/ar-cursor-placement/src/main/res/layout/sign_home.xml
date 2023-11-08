@@ -54,16 +54,25 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:autoLink="all"
-        android:text="Forget Password"
+        android:text="Confirm Password"
         android:textColor="@color/white"
-        android:textSize="20sp"
+        android:textSize="60sp"
         android:textStyle="bold"
-        android:="bold"
-        android:layout_marginTop="0dp"
-        android:layout_marginLeft="360dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
         >
     </TextView>
+
+    <EditText
+        android:hint="at least 8 numbers"
+        android:textSize="30sp"
+        android:inputType="text"
+        android:imeOptions="actionNext"
+        android:layout_height="wrap_content"
+        android:layout_width="500sp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="10dp"
+        />
 
 
     <Button
@@ -73,8 +82,8 @@
         android:layout_gravity="center"
         android:textSize="30sp"
         android:textStyle="italic"
-        android:text="Login"
-        android:layout_marginTop="80dp"
+        android:text="SignUp"
+        android:layout_marginTop="30dp"
         >
     </Button>
 
@@ -82,13 +91,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:autoLink="all"
-        android:text="Sign-Up"
+        android:text="Login"
         android:textColor="@color/white"
         android:textSize="20sp"
         android:textStyle="bold"
         android:="bold"
         android:layout_marginTop="10dp"
-        android:layout_marginLeft="250dp"
+        android:layout_marginLeft="275dp"
         >
     </TextView>
 
