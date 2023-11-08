@@ -18,4 +18,8 @@
         <item name="cornerFamily"> rounded </item>
         <item name="cornerSize"> 20% </item>
     </style>
+
+    <style name="CustomSearchView" parent="Widget.AppCompat.SearchView">
+        <item name="android:background">@drawable/rounded_searchview_background</item>
+    </style>
 </resources>
