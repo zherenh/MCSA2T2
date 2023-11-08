@@ -13,8 +13,9 @@ public class ListData {
         this.image = image;
     }
 
-    public ListData(String name, Bitmap image){
+    public ListData(String name, Bitmap image,String size){
         this.name =name;
         this.img=image;
+        this.size=size;
     }
 }

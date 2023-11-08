@@ -121,6 +121,7 @@ public class HomeFragment extends Fragment {
                                         String name = itemObj.getString("name");
                                         String imgB64 = itemObj.getString("image");
                                         String glbB64 = itemObj.getString("data");
+                                        String size = itemObj.getString("size");
                                         byte[] decodeImage = Base64.decode(imgB64, Base64.DEFAULT);
                                         Bitmap bitmap = BitmapFactory.decodeByteArray(decodeImage, 0, decodeImage.length);
                                         byte[] glbData = Base64.decode(glbB64, Base64.DEFAULT);
@@ -131,7 +132,7 @@ public class HomeFragment extends Fragment {
 //                                        String first100Characters = stringdata.substring(stringdata.length() - 100);
 //                                        Log.e("requestTest", "stringdata"+first100Characters);
 
-                                        ListData modelItem = new ListData(name, bitmap);
+                                        ListData modelItem = new ListData(name, bitmap,size);
 //                                        ListData modelItem = new ListData(name,"2",0);
                                         dataItems.add(modelItem);
                                         Log.e("requestTest", "pass");
