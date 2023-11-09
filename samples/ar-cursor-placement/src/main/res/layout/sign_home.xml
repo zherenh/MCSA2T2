@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
-        android:layout_marginTop="200dp"
+        android:layout_marginTop="70dp"
         android:text="Account"
         android:textColor="@color/white"
         android:textSize="60sp"
@@ -25,7 +25,6 @@
         android:layout_height="wrap_content"
         android:layout_width="500sp"
         android:layout_marginLeft="20dp"
-        android:layout_marginTop="10dp"
         />
 
     <TextView
@@ -35,7 +34,6 @@
         android:textColor="@color/white"
         android:textSize="60sp"
         android:textStyle="bold"
-        android:layout_marginTop="20dp"
         android:layout_marginLeft="20dp"
         >
     </TextView>
@@ -48,7 +46,6 @@
         android:layout_height="wrap_content"
         android:layout_width="500sp"
         android:layout_marginLeft="20dp"
-        android:layout_marginTop="10dp"
         />
 
     <TextView
@@ -58,7 +55,6 @@
         android:textColor="@color/white"
         android:textSize="60sp"
         android:textStyle="bold"
-        android:layout_marginTop="20dp"
         android:layout_marginLeft="20dp"
         >
     </TextView>
@@ -71,7 +67,6 @@
         android:layout_height="wrap_content"
         android:layout_width="500sp"
         android:layout_marginLeft="20dp"
-        android:layout_marginTop="10dp"
         />
 
 
@@ -97,7 +92,7 @@
         android:textStyle="bold"
         android:="bold"
         android:layout_marginTop="10dp"
-        android:layout_marginLeft="275dp"
+        android:layout_marginLeft="177dp"
         >
     </TextView>
 

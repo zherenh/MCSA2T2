@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
-        android:layout_marginTop="200dp"
+        android:layout_marginTop="100dp"
         android:text="Account"
         android:textColor="@color/white"
         android:textSize="60sp"
@@ -23,7 +23,7 @@
         android:inputType="textEmailAddress"
         android:imeOptions="actionNext"
         android:layout_height="wrap_content"
-        android:layout_width="500sp"
+        android:layout_width="350sp"
         android:layout_marginLeft="20dp"
         android:layout_marginTop="10dp"
         />
@@ -46,24 +46,22 @@
         android:inputType="text"
         android:imeOptions="actionNext"
         android:layout_height="wrap_content"
-        android:layout_width="500sp"
+        android:layout_width="350sp"
         android:layout_marginLeft="20dp"
         android:layout_marginTop="10dp"
         />
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="210dp"
+        android:layout_marginTop="0dp"
+        android:="bold"
         android:autoLink="all"
         android:text="Forget Password"
         android:textColor="@color/white"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:="bold"
-        android:layout_marginTop="0dp"
-        android:layout_marginLeft="360dp"
-        >
-    </TextView>
+        android:textStyle="bold"></TextView>
 
 
     <Button
@@ -88,7 +86,7 @@
         android:textStyle="bold"
         android:="bold"
         android:layout_marginTop="10dp"
-        android:layout_marginLeft="250dp"
+        android:layout_marginLeft="170dp"
         >
     </TextView>
 
